@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>멜로디 크래프트 AI - 감성 AI 작곡 스튜디오</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                            dark: '#0b0f19',
+                            card: '#161e2e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #080c14;
+            color: #f3f4f6;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .glow-indigo {
+            box-shadow: 0 0 30px -5px rgba(99, 102, 241, 0.35);
+        }
+
+        .glow-card:hover {
+            box-shadow: 0 0 20px 2px rgba(129, 140, 248, 0.25);
+        }
+
+        .pulse-playing {
+            animation: pulse-border 1.2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            50% { border-color: rgba(129, 140, 248, 1); box-shadow: 0 0 15px 2px rgba(99, 102, 241, 0.6); }
+            100% { border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-indigo-500/30">
+                    🪄
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">
+                        멜로디 크래프트 AI
+                    </h1>
+                    <p class="text-xs text-slate-400">내 느낌과 기분으로 만드는 AI 작곡 스튜디오</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="openSavedLibrary()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs md:text-sm font-semibold text-indigo-300 border border-slate-700 transition flex items-center gap-1.5">
+                    <span>📁 내 보관함</span>
+                    <span id="library-count" class="px-1.5 py-0.2 bg-indigo-600/60 text-white rounded-full text-[10px]">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Work Area -->
+    <main class="max-w-6xl mx-auto w-full px-4 py-6 flex-1 flex flex-col gap-6">
+
+        <!-- Mood Input Studio -->
+        <section class="bg-gradient-to-b from-slate-900/90 to-slate-950 border border-indigo-500/20 rounded-3xl p-5 md:p-7 relative overflow-hidden shadow-2xl space-y-5">
+            <div class="absolute -right-16 -top-16 w-56 h-56 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-16 -bottom-16 w-56 h-56 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="space-y-2 relative z-10">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        ✨ EMOTION COMPOSER
+                    </span>
+                    <span class="text-xs text-slate-400">느낌이나 단어를 적으면 AI가 어울리는 작곡을 해드립니다.</span>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+                    지금 어떤 느낌이나 가사를 전달하고 싶으신가요?
+                </h2>
+            </div>
+
+            <!-- Mood Input Form & Preset Chips -->
+            <div class="space-y-4 relative z-10">
+                <div class="relative">
+                    <textarea id="mood-input" rows="3" 
+                        placeholder="예: 비 오는 창가에서 옛추억을 떠올리는 쓸쓸한 발라드 / 해질녘 바닷가 도로를 달리는 희망찬 시티팝 / 카페에서 공부할 때 듣는 따스하고 아늑한 로파이 음악"
+                        class="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl p-4 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition resize-none shadow-inner"></textarea>
+                    
+                    <button onclick="clearMoodInput()" class="absolute right-3 top-3 text-xs text-slate-500 hover:text-slate-300 bg-slate-900 px-2 py-1 rounded">
+                        Clear
+                    </button>
+                </div>
+
+                <!-- Quick Preset Chips -->
+                <div class="space-y-2">
+                    <div class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                        <span>💡 빠른 기분 추천 태그:</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button onclick="applyPreset('비 내리는 밤의 센치한 감성 발라드')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-indigo-900/40 hover:text-indigo-200 border border-slate-700 text-slate-300 transition">
+                            🌧️ 비 내리는 밤 센치함
+                        </button>
+                        <button onclick="applyPreset('주황빛 노을을 보며 해변 도로를 달리는 신나는 드라이브')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-amber-900/40 hover:text-amber-200 border border-slate-700 text-slate-300 transition">
+                            🌅 노을길 드라이브
+                        </button>
+                        <button onclick="applyPreset('네온 불빛 반짝이는 밤거리의 세련된 시티팝 & 신스웨이브')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-purple-900/40 hover:text-purple-200 border border-slate-700 text-slate-300 transition">
+                            🌌 야경 신스웨이브
+                        </button>
+                        <button onclick="applyPreset('따스한 햇살이 내려앉은 고요한 카페 로파이 칠(Chill)')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-emerald-900/40 hover:text-emerald-200 border border-slate-700 text-slate-300 transition">
+                            ☕ 따스한 칠(Chill) 로파이
+                        </button>
+                        <button onclick="applyPreset('지친 하루 끝 따스하게 끌어안아주는 고요한 위로')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-blue-900/40 hover:text-blue-200 border border-slate-700 text-slate-300 transition">
+                            🌙 고요한 새벽 위로
+                        </button>
+                        <button onclick="applyPreset('설레는 봄날 새로운 시작과 만남의 기쁨')" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-pink-900/40 hover:text-pink-200 border border-slate-700 text-slate-300 transition">
+                            🌸 봄날의 설렘
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Parameter Sliders -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800 text-xs">
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-slate-400">
+                            <span>🔥 감정 에너지:</span>
+                            <span id="energy-val-text" class="text-indigo-400 font-bold">보통 (50%)</span>
+                        </div>
+                        <input id="slider-energy" type="range" min="10" max="100" value="50" oninput="updateParamLabels()" class="w-full accent-indigo-500 cursor-pointer">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-slate-400">
+                            <span>⏱️ 권장 속도 (BPM):</span>
+                            <span id="bpm-val-text" class="text-indigo-400 font-bold">90 BPM</span>
+                        </div>
+                        <input id="slider-bpm" type="range" min="60" max="150" value="90" oninput="updateParamLabels()" class="w-full accent-indigo-500 cursor-pointer">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-slate-400">
+                            <span>🎼 음악 스타일 색채:</span>
+                            <span id="scale-val-text" class="text-indigo-400 font-bold">AI 자동 감지</span>
+                        </div>
+                        <select id="select-scale-mode" onchange="updateParamLabels()" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none">
+                            <option value="auto">🤖 AI 감정 자동 매칭</option>
+                            <option value="major">밝고 안정적인 Major Scale</option>
+                            <option value="minor">서정적이고 아련한 Minor Scale</option>
+                            <option value="jazzy">세련된 7th Jazz/City Pop</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Generate Action Button -->
+                <button id="btn-generate" onclick="generateSongFromMood()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 active:scale-[0.99] text-white font-extrabold text-base md:text-lg shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition group">
+                    <span class="group-hover:rotate-12 transition transform">✨</span>
+                    <span>이 기분으로 맞춤 곡 작곡하기</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Generated Composition Studio Workspace -->
+        <section id="song-result-card" class="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 md:p-6 shadow-xl space-y-6">
+            
+            <!-- Dynamic Track Meta Header -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5">
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span id="track-genre-badge" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            🌧️ 센치한 감성 발라드
+                        </span>
+                        <span id="track-key-badge" class="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-300">
+                            Key: A Minor
+                        </span>
+                        <span id="track-bpm-badge" class="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-800 text-slate-300">
+                            75 BPM
+                        </span>
+                    </div>
+                    <h3 id="track-title" class="text-xl md:text-2xl font-black text-white">
+                        "빗소리에 담긴 조용한 추억"
+                    </h3>
+                    <p id="track-prompt-summary" class="text-xs text-slate-400 italic">
+                        입력한 기분: "비 오는 밤 창밖을 보며 느끼는 쓸쓸함과 그 속에 남아있는 따뜻한 기억"
+                    </p>
+                </div>
+
+                <!-- Bookmark & Share Action -->
+                <div class="flex items-center gap-2">
+                    <button onclick="saveCurrentTrack()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition flex items-center gap-1.5">
+                        <span>⭐ 보관함에 저장</span>
+                    </button>
+                    <button onclick="copyProgressionText()" class="px-3.5 py-2 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-indigo-200 text-xs font-bold border border-indigo-700 transition flex items-center gap-1.5">
+                        <span>📋 코드 복사</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive Measures Timeline (4~8 Slots) -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span class="font-bold text-slate-200">🎼 완성된 코드 진행 & 멜로디 타임라인</span>
+                    <span>재생 시 마디가 실시간으로 하이라이트됩니다</span>
+                </div>
+
+                <div id="timeline-slots-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <!-- Dynamic measure slots inserted via JS -->
+                </div>
+            </div>
+
+            <!-- Audio Playback Controls & Visualizer Toolbar -->
+            <div class="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                
+                <!-- Playback Buttons -->
+                <div class="flex items-center gap-3">
+                    <button id="btn-play-song" onclick="togglePlaySong()" class="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-black text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition">
+                        <span id="play-icon">▶️</span>
+                        <span id="play-text">AI 곡 연주하기</span>
+                    </button>
+
+                    <button onclick="regenerateVariation()" class="px-4 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition flex items-center gap-1.5 border border-slate-700">
+                        <span>🔄 변주곡 생성</span>
+                    </button>
+                </div>
+
+                <!-- Instrument & BPM Tuning Controls -->
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                    <!-- Instrument Voice Picker -->
+                    <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">🎹 음색:</span>
+                        <select id="instrument-select" onchange="setInstrument(this.value)" class="bg-slate-800 text-indigo-300 rounded px-2 py-1 outline-none border border-slate-700 text-xs font-semibold">
+                            <option value="piano">그랜드 피아노 (Grand Piano)</option>
+                            <option value="lofi">감성 로파이 EP (Lo-Fi EP)</option>
+                            <option value="pad">몽환 신스 패드 (Synth Pad)</option>
+                            <option value="brass">네온 신스웨이브 (Neon Synth)</option>
+                        </select>
+                    </div>
+
+                    <!-- Tempo Control -->
+                    <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800">
+                        <span class="text-slate-400">⏱️ 속도:</span>
+                        <input id="playback-bpm" type="range" min="60" max="140" value="75" oninput="changePlaybackBPM(this.value)" class="w-16 accent-indigo-500 cursor-pointer">
+                        <span id="bpm-display-text" class="font-mono text-indigo-400 font-bold w-12">75 BPM</span>
+                    </div>
+
+                    <!-- Realtime Oscilloscope Canvas -->
+                    <div class="w-full sm:w-32 h-10 bg-slate-900 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center">
+                        <canvas id="visualizer-canvas" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Music Theory Analysis & Lyric Guide -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                
+                <!-- Music Explanation Box -->
+                <div class="bg-slate-950/60 border border-slate-800/90 rounded-2xl p-4 space-y-2">
+                    <h4 class="text-xs font-bold text-indigo-400 flex items-center gap-1">
+                        <span>💡 화성학적 분석 & 작곡 해설</span>
+                    </h4>
+                    <p id="theory-explanation-text" class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                        <!-- Dynamic explanation -->
+                    </p>
+                </div>
+
+                <!-- Lyric Guide Box -->
+                <div class="bg-slate-950/60 border border-slate-800/90 rounded-2xl p-4 space-y-2">
+                    <h4 class="text-xs font-bold text-purple-400 flex items-center gap-1">
+                        <span>📝 AI 가사 가이드 추천</span>
+                    </h4>
+                    <p id="lyric-guide-text" class="text-xs md:text-sm italic text-indigo-100/90 font-medium leading-relaxed">
+                        <!-- Dynamic lyrics -->
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Saved Library Modal -->
+    <div id="library-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">📁</span>
+                    <h3 class="text-lg font-bold text-white">내가 저장한 AI 작곡 보관함</h3>
+                </div>
+                <button onclick="closeSavedLibrary()" class="text-slate-400 hover:text-white p-1 text-sm font-mono">✕ 닫기</button>
+            </div>
+
+            <div id="library-items-list" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                <!-- Dynamically populated saved songs -->
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
+                <span>로컬 브라우저에 안전하게 저장됩니다.</span>
+                <button onclick="clearLibrary()" class="text-rose-400 hover:underline">전체 삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-4 text-center text-xs text-slate-500">
+        <p>멜로디 크래프트 AI • 순수 Web Audio API 감성 작곡 엔진</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Global Audio Context & State
+        let audioCtx = null;
+        let isPlaying = false;
+        let playInterval = null;
+        let currentStep = 0;
+        let currentBpm = 75;
+        let selectedInstrument = 'piano';
+
+        // Current Active Generated Song State
+        let currentTrack = null;
+        let savedTracks = [];
+
+        // Chord Frequencies & Notes Database
+        const chordDB = {
+            'C':   { name: 'C Major',   notes: [130.81, 261.63, 329.63, 392.00], melody: [523.25, 659.25, 783.99], mood: '밝음, 개방적' },
+            'G':   { name: 'G Major',   notes: [98.00,  196.00, 246.94, 293.66], melody: [587.33, 739.99, 880.00], mood: '시원함, 추진력' },
+            'Am':  { name: 'A minor',   notes: [110.00, 220.00, 261.63, 329.63], melody: [440.00, 523.25, 659.25], mood: '서정적, 아련함' },
+            'F':   { name: 'F Major',   notes: [87.31,  174.61, 220.00, 261.63], melody: [698.46, 880.00, 1046.50], mood: '희망, 벅차오름' },
+            'Dm':  { name: 'D minor',   notes: [146.83, 220.00, 293.66, 349.23], melody: [587.33, 698.46, 880.00], mood: '센치함, 쓸쓸함' },
+            'Em':  { name: 'E minor',   notes: [82.41,  164.81, 196.00, 246.94], melody: [659.25, 783.99, 987.77], mood: '고요함, 깊은 그늘' },
+            'E7':  { name: 'E7',        notes: [82.41,  164.81, 207.65, 246.94, 293.66], melody: [659.25, 830.61, 987.77], mood: '극적 긴장감' },
+            'FM7': { name: 'F Maj7',    notes: [87.31,  174.61, 220.00, 261.63, 329.63], melody: [698.46, 880.00, 987.77], mood: '몽환적, 세련됨' },
+            'Em7': { name: 'E min7',   notes: [82.41,  164.81, 196.00, 246.94, 293.66], melody: [659.25, 783.99, 880.00], mood: '부드러운 감성' },
+            'Dm7': { name: 'D min7',   notes: [146.83, 220.00, 261.63, 293.66, 349.23], melody: [587.33, 698.46, 783.99], mood: '도시적, 칠(Chill)' },
+            'CM7': { name: 'C Maj7',    notes: [130.81, 261.63, 329.63, 392.00, 493.88], melody: [523.25, 659.25, 987.77], mood: '따스한 로맨틱' },
+            'G7':  { name: 'G7',        notes: [98.00,  196.00, 246.94, 293.66, 349.23], melody: [587.33, 698.46, 783.99], mood: '화려한 도미넌트' },
+            'Am7': { name: 'A min7',   notes: [110.00, 220.00, 261.63, 329.63, 392.00], melody: [440.00, 523.25, 783.99], mood: '아늑한 고독' },
+            'Bb':  { name: 'Bb Major',  notes: [116.54, 233.08, 293.66, 349.23], melody: [466.16, 587.33, 698.46], mood: '몽환적 분위기' }
+        };
+
+        // Web Audio Synthesizer Core
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playChordAndMelody(chordKey, duration = 1.6) {
+            const ctx = getAudioContext();
+            if (!ctx || !chordKey || !chordDB[chordKey]) return;
+
+            const chordInfo = chordDB[chordKey];
+            const now = ctx.currentTime;
+
+            // Master Gain
+            const masterGain = ctx.createGain();
+            masterGain.gain.setValueAtTime(0.28, now);
+            masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            masterGain.connect(ctx.destination);
+
+            // Filter for Instrument Sound
+            const filter = ctx.createBiquadFilter();
+            if (selectedInstrument === 'lofi') {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(900, now);
+            } else if (selectedInstrument === 'pad') {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1200, now);
+            } else if (selectedInstrument === 'brass') {
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(2200, now);
+                filter.frequency.exponentialRampToValueAtTime(500, now + duration);
+            } else { // Piano
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(2800, now);
+            }
+            filter.connect(masterGain);
+
+            // 1. Synthesize Chord Base Notes
+            chordInfo.notes.forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const noteGain = ctx.createGain();
+
+                if (selectedInstrument === 'lofi') {
+                    osc.type = 'triangle';
+                } else if (selectedInstrument === 'pad') {
+                    osc.type = 'sine';
+                } else if (selectedInstrument === 'brass') {
+                    osc.type = 'sawtooth';
+                } else {
+                    osc.type = 'triangle';
+                }
+
+                osc.frequency.setValueAtTime(freq, now);
+
+                const delay = selectedInstrument === 'piano' ? idx * 0.025 : 0;
+                noteGain.gain.setValueAtTime(0, now);
+                noteGain.gain.linearRampToValueAtTime(0.22, now + delay + 0.03);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, now + delay + duration);
+
+                osc.connect(noteGain);
+                noteGain.connect(filter);
+
+                osc.start(now + delay);
+                osc.stop(now + delay + duration);
+            });
+
+            // 2. Synthesize Lead Melody Motif Note (Arpeggiated counterpoint)
+            if (chordInfo.melody && chordInfo.melody.length > 0) {
+                const melFreq1 = chordInfo.melody[Math.floor(Math.random() * chordInfo.melody.length)];
+                const melFreq2 = chordInfo.melody[Math.floor(Math.random() * chordInfo.melody.length)];
+
+                // Play 2 subtle melody notes over the bar
+                [ { f: melFreq1, t: 0.3 }, { f: melFreq2, t: 0.75 } ].forEach(m => {
+                    const melOsc = ctx.createOscillator();
+                    const melGain = ctx.createGain();
+
+                    melOsc.type = 'sine';
+                    melOsc.frequency.setValueAtTime(m.f, now + m.t);
+
+                    melGain.gain.setValueAtTime(0, now + m.t);
+                    melGain.gain.linearRampToValueAtTime(0.18, now + m.t + 0.03);
+                    melGain.gain.exponentialRampToValueAtTime(0.001, now + m.t + 0.5);
+
+                    melOsc.connect(melGain);
+                    melGain.connect(filter);
+
+                    melOsc.start(now + m.t);
+                    melOsc.stop(now + m.t + 0.5);
+                });
+            }
+        }
+
+        // Mood Analysis & AI Composition Algorithm
+        function generateSongFromMood() {
+            const prompt = document.getElementById('mood-input').value.trim();
+            const energy = parseInt(document.getElementById('slider-energy').value);
+            const userBpm = parseInt(document.getElementById('slider-bpm').value);
+            const scaleMode = document.getElementById('select-scale-mode').value;
+
+            const text = prompt || "평화롭고 아늑한 하루의 위로";
+
+            // Analyze Sentiment & Keywords
+            let genre = "🌅 감성 아쿠스틱 팝";
+            let keyName = "C Major";
+            let chords = ['C', 'G', 'Am', 'F'];
+            let title = "햇살 품은 하루";
+            let explanation = "";
+            let lyric = "";
+
+            if (containsKeywords(text, ['비', '밤', '우울', '슬픔', '이별', '쓸쓸', '눈물', '외롭'])) {
+                genre = "🌧️ 비 내리는 밤의 센치한 발라드";
+                keyName = "A Minor";
+                chords = ['Am', 'Dm', 'G', 'C'];
+                if (energy > 60) chords = ['Am', 'F', 'Dm', 'E7'];
+                title = "창가에 고인 빗물과 기억";
+                explanation = "단조(Minor Scale)의 긴장감 속에서 Dm와 E7 코드를 배치하여 가슴 깊은 슬픔과 아련함이 점차 고조되도록 구성했습니다.";
+                lyric = '"창문을 두드리는 비처럼 조용히,\n너의 소중했던 기억이 내 마음에 차올라"';
+            } 
+            else if (containsKeywords(text, ['드라이브', '노을', '바다', '해변', '신나는', '여행', '달리', '희망'])) {
+                genre = "🏎️ 노을길 신나는 드라이브 Pop";
+                keyName = "C Major";
+                chords = ['C', 'G', 'Am', 'F'];
+                if (energy > 70) chords = ['F', 'G', 'Em', 'Am'];
+                title = "주황빛 노을을 향해 달려";
+                explanation = "으뜸음 C에서 출발해 G, Am, F로 이어지는 대표적인 팝 진행입니다. 벅차오르는 희망과 개방감을 선사합니다.";
+                lyric = '"바람을 가르며 수평선 저 너머로,\n거침없이 달려가는 바로 이 순간"';
+            } 
+            else if (containsKeywords(text, ['시티팝', '야경', '네온', '신스', '도시', '그루브', '80년'])) {
+                genre = "🏙️ 네온 불빛 시티팝 & 신스웨이브";
+                keyName = "F Major (7th)";
+                chords = ['FM7', 'Em7', 'Dm7', 'CM7'];
+                title = "도시의 네온사인 밑에서";
+                explanation = "7th 세븐스 코드를 적극 활용하여 80년대 특유의 세련되고 세련된 도심 야경의 그루브를 표현했습니다.";
+                lyric = '"화려한 도시의 불빛들이 차창을 스치고,\n너와 나의 밤은 더욱 길어져 가네"';
+            } 
+            else if (containsKeywords(text, ['로파이', '카페', '칠', 'chill', '따스', '아늑', '공부', '쉬'])) {
+                genre = "☕ 따스한 칠(Chill) 로파이 힙합";
+                keyName = "C Maj7";
+                chords = ['CM7', 'Am7', 'Dm7', 'G7'];
+                title = "따스한 커피 한 잔의 온기";
+                explanation = "따스한 CM7과 Dm7-G7 2-5-1 재즈 종지를 기반으로 편안하게 마음을 이완해 주는 오가닉 흐름입니다.";
+                lyric = '"창가로 스며드는 따스한 햇살 아래,\n조용히 지친 마음을 쉬어가고 있어"';
+            } 
+            else if (containsKeywords(text, ['새벽', '위로', '고요', '잠', '밤하늘', '달빛'])) {
+                genre = "🌙 고요한 새벽의 위로 음악";
+                keyName = "E Minor";
+                chords = ['Em', 'Am', 'D', 'G'];
+                if (scaleMode === 'jazzy') chords = ['Em7', 'Am7', 'CM7', 'FM7'];
+                title = "달빛이 내려앉는 밤";
+                explanation = "부드럽고 조용한 Minor7th 음색을 통해 고요한 밤 혼자만의 시간을 포근히 감싸 안아줍니다.";
+                lyric = '"지친 오늘 하루 고생 많았다고,\n밤하늘 달빛이 나직하게 건네는 말"';
+            }
+            else {
+                // Default / General Sentiment Builder
+                if (scaleMode === 'minor') {
+                    genre = "🌌 감성 서정 마이너 팝";
+                    keyName = "A Minor";
+                    chords = ['Am', 'F', 'C', 'G'];
+                    title = "마음 속 서정시";
+                    explanation = "Am-F-C-G 감성 4코드 진행으로 내면의 아련함과 묵직한 솔직함을 전달하도록 작곡했습니다.";
+                    lyric = '"스쳐 지나가는 바람 속에서,\n잊고 있던 나의 꿈을 다시 떠올려"';
+                } else if (scaleMode === 'jazzy') {
+                    genre = "🍸 감각적인 칠 재즈 스타일";
+                    keyName = "F Major";
+                    chords = ['FM7', 'G7', 'Em7', 'Am7'];
+                    title = "감각적인 순간의 울림";
+                    explanation = "부드러운 화음 전환과 세븐스 텐션 노트를 활용해 영화 속 한 장면 같은 우아함을 담았습니다.";
+                    lyric = '"우연히 마주친 시선 속에서,\n색다른 설렘이 소리 없이 피어나"';
+                } else {
+                    genre = "🌸 밝고 따스한 어쿠스틱 팝";
+                    keyName = "C Major";
+                    chords = ['C', 'Am', 'F', 'G'];
+                    title = "마음이 밝아지는 멜로디";
+                    explanation = "가장 안정적인 C-Am-F-G 으뜸 진행을 통해 편안하고 기분 좋은 미소를 선사합니다.";
+                    lyric = '"오늘따라 맑은 하늘을 보며,\n새로운 걸음을 가볍게 내딛어봐"';
+                }
+            }
+
+            // Apply energy/bpm overrides
+            let finalBpm = userBpm;
+            if (userBpm === 90) { // user didn't move slider much
+                if (genre.includes('드라이브') || genre.includes('시티팝')) finalBpm = 110;
+                else if (genre.includes('발라드') || genre.includes('새벽')) finalBpm = 72;
+                else if (genre.includes('로파이')) finalBpm = 80;
+            }
+
+            // Build Track Object
+            currentTrack = {
+                id: Date.now(),
+                title: title,
+                prompt: text,
+                genre: genre,
+                key: keyName,
+                bpm: finalBpm,
+                chords: chords,
+                explanation: explanation,
+                lyric: lyric
+            };
+
+            // Stop any existing playback and update UI
+            stopSong();
+            updateSongUI();
+
+            // Auto Play created song!
+            setTimeout(() => {
+                startSong();
+            }, 300);
+        }
+
+        function containsKeywords(text, keywords) {
+            return keywords.some(kw => text.toLowerCase().includes(kw));
+        }
+
+        // Render Generated Track into UI
+        function updateSongUI() {
+            if (!currentTrack) return;
+
+            document.getElementById('track-genre-badge').textContent = currentTrack.genre;
+            document.getElementById('track-key-badge').textContent = `Key: ${currentTrack.key}`;
+            document.getElementById('track-bpm-badge').textContent = `${currentTrack.bpm} BPM`;
+            document.getElementById('track-title').textContent = `"${currentTrack.title}"`;
+            document.getElementById('track-prompt-summary').textContent = `입력한 감정/느낌: "${currentTrack.prompt}"`;
+
+            document.getElementById('theory-explanation-text').textContent = currentTrack.explanation;
+            document.getElementById('lyric-guide-text').innerHTML = currentTrack.lyric.replace('\n', '<br>');
+
+            document.getElementById('playback-bpm').value = currentTrack.bpm;
+            document.getElementById('bpm-display-text').textContent = `${currentTrack.bpm} BPM`;
+            currentBpm = currentTrack.bpm;
+
+            // Render Timeline Slots Grid
+            const grid = document.getElementById('timeline-slots-grid');
+            grid.innerHTML = '';
+
+            currentTrack.chords.forEach((chordId, idx) => {
+                const info = chordDB[chordId] || { name: chordId, mood: '화음' };
+                const slot = document.createElement('div');
+                slot.id = `measure-slot-${idx}`;
+                slot.className = "relative bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center flex flex-col justify-between min-h-[110px] transition-all duration-300";
+                
+                slot.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                        <span>마디 ${idx + 1}</span>
+                        <span>🎼 반주+멜로디</span>
+                    </div>
+                    <div class="my-1">
+                        <div class="text-xl md:text-2xl font-black text-white">${info.name}</div>
+                        <div class="text-[11px] text-indigo-300 font-medium">${info.mood}</div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 border-t border-slate-800/80 pt-1">
+                        코드: ${chordId}
+                    </div>
+                `;
+                grid.appendChild(slot);
+            });
+        }
+
+        // Play / Pause Song Loop Controls
+        function togglePlaySong() {
+            if (isPlaying) {
+                stopSong();
+            } else {
+                startSong();
+            }
+        }
+
+        function startSong() {
+            if (!currentTrack) return;
+
+            getAudioContext();
+            isPlaying = true;
+            currentStep = 0;
+
+            const btn = document.getElementById('btn-play-song');
+            document.getElementById('play-icon').textContent = '⏹️';
+            document.getElementById('play-text').textContent = '정지하기';
+            btn.classList.replace('bg-indigo-600', 'bg-rose-600');
+            btn.classList.replace('hover:bg-indigo-500', 'hover:bg-rose-500');
+
+            playMeasureStep();
+
+            const msPerMeasure = (60 / currentBpm) * 4 * 1000;
+            playInterval = setInterval(() => {
+                currentStep = (currentStep + 1) % currentTrack.chords.length;
+                playMeasureStep();
+            }, msPerMeasure);
+        }
+
+        function playMeasureStep() {
+            if (!currentTrack) return;
+
+            // Highlight timeline slots
+            currentTrack.chords.forEach((_, idx) => {
+                const slot = document.getElementById(`measure-slot-${idx}`);
+                if (slot) {
+                    if (idx === currentStep) {
+                        slot.className = "relative bg-indigo-950/90 p-4 rounded-2xl border-2 border-indigo-400 text-center flex flex-col justify-between min-h-[110px] pulse-playing shadow-lg shadow-indigo-500/20";
+                    } else {
+                        slot.className = "relative bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center flex flex-col justify-between min-h-[110px] transition-all duration-300";
+                    }
+                }
+            });
+
+            // Play synthesized audio
+            const activeChord = currentTrack.chords[currentStep];
+            const duration = (60 / currentBpm) * 3.8;
+            playChordAndMelody(activeChord, duration);
+        }
+
+        function stopSong() {
+            isPlaying = false;
+            if (playInterval) clearInterval(playInterval);
+
+            const btn = document.getElementById('btn-play-song');
+            if (btn) {
+                document.getElementById('play-icon').textContent = '▶️';
+                document.getElementById('play-text').textContent = 'AI 곡 연주하기';
+                btn.classList.replace('bg-rose-600', 'bg-indigo-600');
+                btn.classList.replace('hover:bg-rose-500', 'hover:bg-indigo-500');
+            }
+
+            if (currentTrack) {
+                currentTrack.chords.forEach((_, idx) => {
+                    const slot = document.getElementById(`measure-slot-${idx}`);
+                    if (slot) slot.className = "relative bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center flex flex-col justify-between min-h-[110px] transition-all duration-300";
+                });
+            }
+        }
+
+        function changePlaybackBPM(val) {
+            currentBpm = parseInt(val);
+            document.getElementById('bpm-display-text').textContent = `${currentBpm} BPM`;
+            if (currentTrack) currentTrack.bpm = currentBpm;
+
+            if (isPlaying) {
+                stopSong();
+                startSong();
+            }
+        }
+
+        function setInstrument(val) {
+            selectedInstrument = val;
+        }
+
+        function regenerateVariation() {
+            if (!currentTrack) return;
+            // Shift chords or try secondary variation
+            const chords = currentTrack.chords;
+            const shifted = [chords[2], chords[3], chords[0], chords[1]];
+            currentTrack.chords = shifted;
+            currentTrack.title += " (변주 버전)";
+            updateSongUI();
+            if (isPlaying) {
+                stopSong();
+                startSong();
+            }
+        }
+
+        // Helper UI handlers
+        function applyPreset(text) {
+            document.getElementById('mood-input').value = text;
+            generateSongFromMood();
+        }
+
+        function clearMoodInput() {
+            document.getElementById('mood-input').value = '';
+        }
+
+        function updateParamLabels() {
+            const energy = document.getElementById('slider-energy').value;
+            const bpm = document.getElementById('slider-bpm').value;
+            const scale = document.getElementById('select-scale-mode').value;
+
+            document.getElementById('energy-val-text').textContent = energy > 70 ? `강렬함 (${energy}%)` : energy < 40 ? `잔잔함 (${energy}%)` : `보통 (${energy}%)`;
+            document.getElementById('bpm-val-text').textContent = `${bpm} BPM`;
+
+            const scaleNames = { auto: 'AI 자동 감지', major: 'Major Scale', minor: 'Minor Scale', jazzy: 'Jazzy 7th' };
+            document.getElementById('scale-val-text').textContent = scaleNames[scale] || '자동';
+        }
+
+        function copyProgressionText() {
+            if (!currentTrack) return;
+            const text = `[${currentTrack.title}] 코드 진행: ${currentTrack.chords.join(' - ')} (${currentTrack.bpm} BPM)`;
+            
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            alert(`복사되었습니다:\n${text}`);
+        }
+
+        // Saved Tracks Library Storage Management
+        function saveCurrentTrack() {
+            if (!currentTrack) return;
+
+            const exists = savedTracks.some(t => t.id === currentTrack.id);
+            if (!exists) {
+                savedTracks.unshift({ ...currentTrack });
+                localStorage.setItem('melodycraft_saved_tracks', JSON.stringify(savedTracks));
+                updateLibraryCount();
+                alert('내 작곡 보관함에 성공적으로 저장되었습니다!');
+            } else {
+                alert('이미 보관함에 저장된 곡입니다.');
+            }
+        }
+
+        function loadSavedTracks() {
+            try {
+                const stored = localStorage.getItem('melodycraft_saved_tracks');
+                if (stored) savedTracks = JSON.parse(stored);
+            } catch(e) {
+                savedTracks = [];
+            }
+            updateLibraryCount();
+        }
+
+        function updateLibraryCount() {
+            const el = document.getElementById('library-count');
+            if (el) el.textContent = savedTracks.length;
+        }
+
+        function openSavedLibrary() {
+            loadSavedTracks();
+            const list = document.getElementById('library-items-list');
+            list.innerHTML = '';
+
+            if (savedTracks.length === 0) {
+                list.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs">아직 저장된 작곡이 없습니다. 감정을 입력하고 곡을 저장해 보세요!</div>`;
+            } else {
+                savedTracks.forEach((track, i) => {
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 hover:border-indigo-500/50 transition";
+                    item.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">${track.genre}</span>
+                                <span class="text-xs text-slate-400 font-mono">${track.bpm} BPM</span>
+                            </div>
+                            <div class="text-sm font-bold text-white">"${track.title}"</div>
+                            <div class="text-xs font-mono text-indigo-300">${track.chords.join(' → ')}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="loadTrackFromLibrary(${i})" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow">
+                                불러오기
+                            </button>
+                            <button onclick="deleteTrackFromLibrary(${i})" class="text-slate-500 hover:text-rose-400 p-1 text-xs">
+                                🗑️
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+
+            const modal = document.getElementById('library-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeSavedLibrary() {
+            const modal = document.getElementById('library-modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function loadTrackFromLibrary(index) {
+            currentTrack = { ...savedTracks[index] };
+            stopSong();
+            updateSongUI();
+            closeSavedLibrary();
+            setTimeout(() => startSong(), 200);
+        }
+
+        function deleteTrackFromLibrary(index) {
+            savedTracks.splice(index, 1);
+            localStorage.setItem('melodycraft_saved_tracks', JSON.stringify(savedTracks));
+            openSavedLibrary();
+        }
+
+        function clearLibrary() {
+            if (confirm('저장된 곡을 모두 삭제하시겠습니까?')) {
+                savedTracks = [];
+                localStorage.removeItem('melodycraft_saved_tracks');
+                openSavedLibrary();
+            }
+        }
+
+        // Realtime Oscilloscope Canvas Renderer
+        function setupCanvasVisualizer() {
+            const canvas = document.getElementById('visualizer-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            function draw() {
+                requestAnimationFrame(draw);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = isPlaying ? '#818cf8' : '#334155';
+                ctx.beginPath();
+
+                const slices = 16;
+                const sliceWidth = canvas.width / slices;
+                let x = 0;
+
+                for (let i = 0; i < slices; i++) {
+                    const wave = isPlaying ? (Math.sin(Date.now() * 0.012 + i) * 10) + (canvas.height / 2) : canvas.height / 2;
+                    if (i === 0) ctx.moveTo(x, wave);
+                    else ctx.lineTo(x, wave);
+                    x += sliceWidth;
+                }
+                ctx.stroke();
+            }
+            draw();
+        }
+
+        // Page Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            setupCanvasVisualizer();
+            loadSavedTracks();
+            // Default Initial Composition
+            generateSongFromMood();
+        });
+    </script>
+</body>
+</html>
